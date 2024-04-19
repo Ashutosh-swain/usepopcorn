@@ -3,57 +3,77 @@
 // presentational/ stateless components: ex: Logo , NumResults , Movie , WatchedSummary , WatchedMoviesList , WatchedMovie
 // stateful component: ex: Search, ListBox , MovieList , WatchedBox
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import StarRating from "./StarRating";
-import { useMovies } from "./useMovies"; // importing our custom hook
-import { useLocalStorageState } from "./useLocalStorageState"; // importing our custom hook
-import { useKey } from "./useKey"; // importing our custom hook
+
+const tempMovieData = [
+  {
+    imdbID: "tt1375666",
+    Title: "Inception",
+    Year: "2010",
+    Poster:
+      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
+  },
+  {
+    imdbID: "tt0133093",
+    Title: "The Matrix",
+    Year: "1999",
+    Poster:
+      "https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg",
+  },
+  {
+    imdbID: "tt6751668",
+    Title: "Parasite",
+    Year: "2019",
+    Poster:
+      "https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg",
+  },
+];
+
+const tempWatchedData = [
+  {
+    imdbID: "tt1375666",
+    Title: "Inception",
+    Year: "2010",
+    Poster:
+      "https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg",
+    runtime: 148,
+    imdbRating: 8.8,
+    userRating: 10,
+  },
+  {
+    imdbID: "tt0088763",
+    Title: "Back to the Future",
+    Year: "1985",
+    Poster:
+      "https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg",
+    runtime: 116,
+    imdbRating: 8.5,
+    userRating: 9,
+  },
+];
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 // api key for the api
 const KEY = "eb905841";
-//const tempQuery = "Avengers";
+const tempQuery = "Avengers";
 
 export default function App() {
   // here we have lifted the state up
   const [query, setQuery] = useState("");
-  // // here we are lifting the state up so that this state can be used by all child components which are siblings of eachother
-  // const [movies, setMovies] = useState([]);
+  // here we are lifting the state up so that this state can be used by all child components which are siblings of eachother
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+  // creating a piece of state for loading indicator
+  const [isLoading, setIsLoading] = useState(false);
 
-  // // creating a piece of state for loading indicator
-  // const [isLoading, setIsLoading] = useState(false);
-
-  // // to display the error message we need a piece of state that we can use to display error on to the componenet / ui
-  // const [error, setError] = useState("");
+  // to display the error message we need a piece of state that we can use to display error on to the componenet / ui
+  const [error, setError] = useState("");
 
   // creating state for selecting a movie
   const [selectedId, setSelectedId] = useState(null);
-
-  // calling the custom Hook
-  // getting the return values from the custom hook function and destrucuring it to be used in differnet components
-  // destrucuring of returned object
-  // this custom hook will return the states that are needed to run the application
-  // here we are also providing a callback function as argument
-  //const { movies, isLoading, error } = useMovies(query, handleCloseMovie);
-  const { movies, isLoading, error } = useMovies(query);
-
-  // calling the custom Hook
-  // creating Custom Hook for storing data in browsers localstorage
-  // this hook will return an array of watched movie and a setter function
-  const [watched, setWatched] = useLocalStorageState([], "watched");
-
-  // // step 2: reading the data from the local storage when the application mounts
-  // //const [watched, setWatched] = useState([]);
-  // // instead of passing a value in state we will pass a callback function that we will use to read the data that we have stored in the browsers local storage
-  // const [watched, setWatched] = useState(function () {
-  //   // this callback function should be a pure function means withoout any argument
-  //   // reading the data from the local storage
-  //   // this function will only run once and during the initial render/ mount
-  //   const storedValue = localStorage.getItem("watched"); // using this function to get the data from the local storage of the browser
-  //   return JSON.parse(storedValue); // we have passed the value as a string so we need to parse it back to original form
-  // });
 
   // creating a handler function for click event of the first box
   function handleSelectMovie(id) {
@@ -70,24 +90,7 @@ export default function App() {
   function handleAddWatched(movie) {
     // watched is the current object and movie is the new object
     setWatched((watched) => [...watched, movie]);
-    // step1:localStorage adding data
-    // Method 1: storing data in local storage inside the event handler function
-    //storing the watchedlist data into the browsers local storage  (using localStorage function which is presnt in all broswers)
-    //localStorage.setItem("namecof the key", "actual data"); actual value is always a string so convert it before storing
-    // localStorage.setItem("watched", JSON.stringify([...watched, movie])); // use this default function of browser to store data in local storage
-    // to check whether it is stored in devtools in browser go to application and in storage and the local storage then you will find your data stored
   }
-
-  // // method 2:storing data in local storage inside a Effect
-  // useEffect(
-  //   function () {
-  //     //storing the watchedlist data into the browsers local storage  (using localStorage function which is presnt in all broswers)
-  //     //localStorage.setItem("namecof the key", "actual data"); actual value is always a string so convert it before storing
-  //     localStorage.setItem("watched", JSON.stringify(watched)); // use this default function of browser to store data in local storage
-  //     // to check whether it is stored in devtools in browser go to application and in storage and the local storage then you will find your data stored
-  //   },
-  //   [watched]
-  // );
 
   // creating function to remove the watched movie from the watchedlist
   function handleDeleteWatched(id) {
@@ -107,64 +110,64 @@ export default function App() {
   //     .then((data) => setMovies(data.Search));
   // }, []);
 
-  // // Error Handling is always required whenever we are doing asynchronous tasks such as data fetching from APIs , etc
-  // // below we will do error handling also and if u are throwing a new error then wrapp the complete code where error can araise into a try catch block
-  // // useEffect using asynch await method or using async function method
-  // useEffect(
-  //   function () {
-  //     // creating a Abort controller API that we will use in the cleanup function of this useEffect hook
-  //     // AbortController is a browser API
-  //     // thgen after creation passing the controller as second argument to the fetch function
-  //     const controller = new AbortController();
-  //     // creating an async function
-  //     async function fetchMovies() {
-  //       try {
-  //         setIsLoading(true);
-  //         setError("");
-  //         const res = await fetch(
-  //           `http://www.omdbapi.com/?s=${query}&apikey=${KEY}`,
-  //           { signal: controller.signal }
-  //         );
+  // Error Handling is always required whenever we are doing asynchronous tasks such as data fetching from APIs , etc
+  // below we will do error handling also and if u are throwing a new error then wrapp the complete code where error can araise into a try catch block
+  // useEffect using asynch await method or using async function method
+  useEffect(
+    function () {
+      // creating a Abort controller API that we will use in the cleanup function of this useEffect hook
+      // AbortController is a browser API
+      // thgen after creation passing the controller as second argument to the fetch function
+      const controller = new AbortController();
+      // creating an async function
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          setError("");
+          const res = await fetch(
+            `http://www.omdbapi.com/?s=${query}&apikey=${KEY}`,
+            { signal: controller.signal }
+          );
 
-  //         // throwing the error if the api call doesnot provide the output or users internet connection is lost
-  //         if (!res.ok)
-  //           throw new Error("Something went wrong with fetching movies");
+          // throwing the error if the api call doesnot provide the output or users internet connection is lost
+          if (!res.ok)
+            throw new Error("Something went wrong with fetching movies");
 
-  //         const data = await res.json();
+          const data = await res.json();
 
-  //         // handling the error when api call does not return anything
-  //         if (data.Response === "False") throw new Error("Movie not found");
+          // handling the error when api call does not return anything
+          if (data.Response === "False") throw new Error("Movie not found");
 
-  //         setMovies(data.Search);
-  //         setError("");
-  //       } catch (err) {
-  //         //console.error(err.message);
-  //         // as we are aborting the request of fetch api so our code will treat it as an error so to resolve this error we use the below code
-  //         if (err.name !== "AbortError") {
-  //           setError(err.message);
-  //           console.log(err.message);
-  //         }
-  //       } finally {
-  //         setIsLoading(false);
-  //       }
-  //     }
-  //     if (query.length < 3) {
-  //       setMovies([]);
-  //       setError("");
-  //       return;
-  //     }
+          setMovies(data.Search);
+          setError("");
+        } catch (err) {
+          //console.error(err.message);
+          // as we are aborting the request of fetch api so our code will treat it as an error so to resolve this error we use the below code
+          if (err.name !== "AbortError") {
+            setError(err.message);
+            console.log(err.message);
+          }
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      if (query.length < 3) {
+        setMovies([]);
+        setError("");
+        return;
+      }
 
-  //     // on searching we are closing the current movie details so for this we are calling the close movie function
-  //     handleCloseMovie();
-  //     fetchMovies(); // here we are calling the async function so then it will work same as it was working in promise chaining techinque
+      // on searching we are closing the current movie details so for this we are calling the close movie function
+      handleCloseMovie();
+      fetchMovies(); // here we are calling the async function so then it will work same as it was working in promise chaining techinque
 
-  //     // adding a cleanup function using the browser API abort controller
-  //     return function () {
-  //       controller.abort();
-  //     };
-  //   },
-  //   [query]
-  // );
+      // adding a cleanup function using the browser API abort controller
+      return function () {
+        controller.abort();
+      };
+    },
+    [query]
+  );
 
   // fetching data from omdb api using fetch() function for making api calls
   // the below code produces infinite renders as we are using state update in render logic which causes sideeffect that is infinite calling of apis
@@ -266,47 +269,6 @@ function Logo() {
   );
 }
 function Search({ query, setQuery }) {
-  // old way of selecting DOM elements and doing some manupliations:
-  // useEffect(function(){
-  //   const el=document.querySelector(".search");
-  //   console.log(el);
-  //   el.focus(); // this function is used to set focus on that search input field
-  // },[]);
-
-  //useRef hook demo:
-  // new way to select DOM elements using useRef hook : for using useRef we need to follow three steps:
-  const inputEl = useRef(null); // step1: creating a ref using useRef hook
-  // step2:  come to the element that you want to select and pass the ref created as a prop
-  // step 3: to use this ref we will create a useEffect hook  and will use the ref that we have created
-  // useEffect(
-  //   function () {
-  //     // adding keypress eventlistener to input search field so that when we press enter the focus should be on search input field
-  //     function callback(e) {
-  //       if (document.activeElement === inputEl.current) return; // if the focus is on the input search field and we press enter then it should not be reseted so for this we are using this code
-  //       if (e.code === "Enter") {
-  //         // checking for the keypress if keypress is enter key then only execute this
-  //         inputEl.current.focus(); // using focus function to focus on search input field when the page is intial rendered .
-  //         setQuery(""); // after the user presses the enter key the state is reseted
-  //       }
-  //     }
-  //     document.addEventListener("keydown", callback); // this event listener will work for all keypress so to restrict it on only Enter press then in call back function check it in conditional logic
-  //     // creating cleanup function to cleanup before the useEffect hook is executed again and after the component in unmounted
-  //     return () => document.addEventListener("keydown", callback);
-  //   },
-  //   [setQuery]
-  // );
-
-  // or use custom hook to perform the above task .The code is below
-
-  // using the custom hook that we created to perform the above useEffect is doing which is setting the focus to the search input field
-  // here we are providing the callback function as a second parameter
-  useKey("Enter", function () {
-    if (document.activeElement === inputEl.current) return; // if the focus is on the input search field and we press enter then it should not be reseted so for this we are using this code
-    // checking for the keypress if keypress is enter key then only execute this
-    inputEl.current.focus(); // using focus function to focus on search input field when the page is intial rendered .
-    setQuery(""); // after the user presses the enter key the state is reseted
-  });
-
   return (
     <input
       className="search"
@@ -314,7 +276,6 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
-      ref={inputEl} // step2:  come to the element that you want to select and pass the ref created as a prop
     />
   );
 }
@@ -440,22 +401,6 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
   // creating a state setter function that we will export or use outside this component
   const [userRating, setUserRating] = useState("");
 
-  // creating REF for storing the count of how many times the user changed the rating of a selected movie
-  const countRef = useRef(0);
-
-  // updating the ref
-  useEffect(
-    function () {
-      if (userRating) {
-        // this count will start working if the user already have rated and is changing the rating
-        //countRef.current = countRef.current + 1;
-        // countRef.current += 1;
-        countRef.current++;
-      }
-    },
-    [userRating]
-  );
-
   // to remove the issue of user selecting the same movie again and again we are creating a derived state
   const isWatched = watched.map((movie) => movie.imdbID).includes(selectedId);
 
@@ -479,18 +424,6 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     Genre: genre,
   } = movie;
 
-  // // we want this functionality that when a user selects a movie if the rating is above 8 then print true on console.
-  // const [isTop, setIsTop] = useState(imdbRating > 8); // this gets executed only on the initial render/mount only
-  // // so to change the above state we will use useEffect hook so that each time a movie is selected then the state should change
-  // useEffect(function(){
-  //   setIsTop(imdbRating>8);
-  // },[imdbRating]);
-
-  // or to perform the above task we can just use a dervied state
-  // dervied state gets updated in re-renders also
-  // const isTop = imdbRating > 8;
-  // console.log(isTop);
-
   function handleAdd() {
     // creating a new object that we will pass in the function
     const newWatchedMovie = {
@@ -501,34 +434,30 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
       imdbRating: Number(imdbRating),
       runtime: Number(runtime.split(" ").at(0)),
       userRating,
-      countRatingDecisions: countRef.current, // we are passing ref here and it will get updated when user adds a new movie and rating
     };
     onAddWatched(newWatchedMovie);
     onCloseMovie();
   }
 
-  // calling the custom hook useKey
-  useKey("Escape", onCloseMovie); // passing a callback function which will be executed by the custom hook
-
   // creating one more Effect for Listening to a keypress(Escape key press)
   // we want to add Escap event handler to close the movies details of the selected movie so to do this we need a sideEffect so we need an useEffect
-  // useEffect(
-  //   function () {
-  //     // adding a callback function that we will use in both addeventlisteners and removeeventlisteners
-  //     function callback(e) {
-  //       if (e.code === "Escape") {
-  //         onCloseMovie();
-  //       }
-  //     }
-  //     document.addEventListener("keydown", callback);
+  useEffect(
+    function () {
+      // adding a callback function that we will use in both addeventlisteners and removeeventlisteners
+      function callback(e) {
+        if (e.code === "Escape") {
+          onCloseMovie();
+        }
+      }
+      document.addEventListener("keydown", callback);
 
-  //     // adding a cleanup function to cleanup the eventlistener added to the document
-  //     return function () {
-  //       document.removeEventListener("keydown", callback);
-  //     };
-  //   },
-  //   [onCloseMovie]
-  // );
+      // adding a cleanup function to cleanup the eventlistener added to the document
+      return function () {
+        document.removeEventListener("keydown", callback);
+      };
+    },
+    [onCloseMovie]
+  );
 
   // whenever this component is mounted /rendered i want to get the details about the selected movie in this comnponent from an API
   // i want that useEffect hook should execute whenever this component is mounted/rendered so i am using empty dependency array for this purpose
